@@ -8,3 +8,5 @@ doc/*.html
 .#*
 *~
 src/funkload.egg-info/
+
+venv
