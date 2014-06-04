@@ -308,9 +308,13 @@ def WF_fetch(self, url, postdata=None, server=None, port=None, protocol=None,
             webproxy = False
 
         if webproxy:
-            h = httplib.HTTPConnection(webproxy['host'], webproxy['port'])
+            connect_host = webproxy['host']
+            connect_port = webproxy['port']
         else:
-            h = httplib.HTTP(server, int(port))
+            connect_host = server
+            connect_port = int(port)
+
+        h = httplib.HTTPConnection(connect_host, connect_port)
         if int(port) == 80:
             host_header = server
         else:
@@ -329,10 +333,12 @@ def WF_fetch(self, url, postdata=None, server=None, port=None, protocol=None,
 
         # patched to use the given key and cert file
         if webproxy:
-            h = httplib.HTTPSConnection(webproxy['host'], webproxy['port'],
-                                        key_file, cert_file)
+            connect_host = webproxy['host']
+            connect_port = webproxy['port']
         else:
-            h = httplib.HTTPS(server, int(port), key_file, cert_file)
+            connect_host = server
+            connect_port = int(port)
+        h = httplib.HTTPSConnection(connect_host, connect_port, key_file, cert_file)
 
         # FL Patch end  -------------------------
 
@@ -446,48 +452,17 @@ def WF_fetch(self, url, postdata=None, server=None, port=None, protocol=None,
         h.send(params)
 
     # handle the reply
-    if webproxy:
-        r = h.getresponse()
-        errcode = r.status
-        errmsg = r.reason
-        headers = r.msg
-        if headers is None or headers.has_key('content-length') and headers['content-length'] == "0":
-            data = None
-        else:
-            data = r.read()
-        response = HTTPResponse(self.cookies, protocol, server, port, url,
-                                errcode, errmsg, headers, data,
-                                self.error_content)
-
+    r = h.getresponse()
+    errcode = r.status
+    errmsg = r.reason
+    headers = r.msg
+    if headers is None or headers.has_key('content-length') and headers['content-length'] == "0":
+        data = None
     else:
-        # get the body and save it
-        errcode, errmsg, headers = h.getreply()
-        if headers is None or headers.has_key('content-length') and headers['content-length'] == "0":
-            response = HTTPResponse(self.cookies, protocol, server, port, url,
-                                    errcode, errmsg, headers, None,
-                                    self.error_content)
-        else:
-            f = h.getfile()
-            g = cStringIO.StringIO()
-            if consumer is None:
-                d = f.read()
-            else:
-                d = f.readline(1)
-            while d:
-                g.write(d)
-                if consumer is None:
-                    d = f.read()
-                else:
-                    ret = consumer(d)
-                    if ret == 0:
-                        # consumer close connection
-                        d = None
-                    else:
-                        d = f.readline(1)
-            response = HTTPResponse(self.cookies, protocol, server, port, url,
-                                    errcode, errmsg, headers, g.getvalue(),
-                                    self.error_content)
-            f.close()
+        data = r.read()
+    response = HTTPResponse(self.cookies, protocol, server, port, url,
+                            errcode, errmsg, headers, data,
+                            self.error_content)
 
     if errcode not in ok_codes:
         if VERBOSE:
