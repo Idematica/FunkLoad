@@ -245,6 +245,11 @@ def WTC_pageImages(self, url, page, testcase=None):
 
 WebTestCase.pageImages = WTC_pageImages
 
+old_webfetcher_init = WebFetcher.__init__
+def new_webfetcher_init(self):
+    old_webfetcher_init(self)
+    self.h = None
+WebFetcher.__init__ = new_webfetcher_init
 
 # WebFetcher fetch
 def WF_fetch(self, url, postdata=None, server=None, port=None, protocol=None,
@@ -307,14 +312,19 @@ def WF_fetch(self, url, postdata=None, server=None, port=None, protocol=None,
         except (KeyError, IndexError, ValueError):
             webproxy = False
 
-        if webproxy:
-            connect_host = webproxy['host']
-            connect_port = webproxy['port']
-        else:
-            connect_host = server
-            connect_port = int(port)
+        if self.h is None:
+            if webproxy:
+                connect_host = webproxy['host']
+                connect_port = webproxy['port']
+            else:
+                connect_host = server
+                connect_port = int(port)
 
-        h = httplib.HTTPConnection(connect_host, connect_port)
+            h = self.h = httplib.HTTPConnection(connect_host, connect_port)
+        else:
+            h = self.h
+            pass  # TODO check whether the connection is to the correct server
+
         if int(port) == 80:
             host_header = server
         else:
@@ -332,13 +342,17 @@ def WF_fetch(self, url, postdata=None, server=None, port=None, protocol=None,
             webproxy = False
 
         # patched to use the given key and cert file
-        if webproxy:
-            connect_host = webproxy['host']
-            connect_port = webproxy['port']
+        if self.h is None:
+            if webproxy:
+                connect_host = webproxy['host']
+                connect_port = webproxy['port']
+            else:
+                connect_host = server
+                connect_port = int(port)
+            h = self.h = httplib.HTTPSConnection(connect_host, connect_port, key_file, cert_file)
         else:
-            connect_host = server
-            connect_port = int(port)
-        h = httplib.HTTPSConnection(connect_host, connect_port, key_file, cert_file)
+            h = self.h
+            pass  # TODO check whether the connection is to the correct server
 
         # FL Patch end  -------------------------
 
