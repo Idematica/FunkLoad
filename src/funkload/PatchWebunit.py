@@ -390,10 +390,6 @@ def WF_fetch(self, url, postdata=None, server=None, port=None, protocol=None,
     # Other Full Request headers
     if self.authinfo:
         headers.append(('Authorization', "Basic %s"%self.authinfo))
-    if not webproxy:
-        # HTTPConnection seems to add a host header itself.
-        # So we only need to do this if we are not using a proxy.
-        headers.append(('Host', host_header))
 
     # FL Patch -------------------------
     for key, value in self.extra_headers:
