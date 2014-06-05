@@ -429,7 +429,8 @@ Examples
     def runTests(self):
         """Launch the tests."""
         if self.testRunner is None:
-            if self.color:
+            import platform
+            if self.color and not platform.python_version().startswith('2.6'):
                 self.testRunner = unittest.TextTestRunner(
                     stream =ColoredStream(sys.stderr),
                     resultclass = _ColoredTextTestResult,
